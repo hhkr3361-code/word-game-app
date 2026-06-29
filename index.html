@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>مساعد اللعبة</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Tahoma,sans-serif;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#fff);padding:12px;user-select:none}
+h2{text-align:center;font-size:1.1rem;margin-bottom:14px;opacity:.8}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.cat{background:var(--tg-theme-secondary-bg-color,#16213e);border:2px solid transparent;border-radius:12px;color:var(--tg-theme-text-color,#fff);font-size:.9rem;font-weight:600;padding:12px 4px;cursor:pointer;text-align:center}
+.cat.active{border-color:#5b8def;background:#5b8def;color:#fff}
+.letters{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.letter{background:var(--tg-theme-secondary-bg-color,#16213e);border:2px solid transparent;border-radius:8px;color:var(--tg-theme-text-color,#fff);font-size:1.1rem;font-weight:700;padding:10px 0;cursor:pointer;text-align:center}
+.letter.active{border-color:#5b8def;background:#5b8def}
+.result{background:var(--tg-theme-secondary-bg-color,#16213e);border-radius:14px;padding:16px;text-align:center;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#resultWord{font-size:2rem;font-weight:900;color:#4ade80}
+#sendBtn{background:#5b8def;border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:700;padding:12px 32px;cursor:pointer;display:none;width:100%}
+.hint{opacity:.5;font-size:.85rem}
+</style>
+</head>
+<body>
+<h2>🎮 مساعد اللعبة</h2>
+<div class="cats">
+<div class="cat" onclick="selectCat(this,'ولد')">👦 ولد</div>
+<div class="cat" onclick="selectCat(this,'بنت')">👧 بنت</div>
+<div class="cat" onclick="selectCat(this,'حيوان')">🐾 حيوان</div>
+<div class="cat" onclick="selectCat(this,'جماد')">🪨 جماد</div>
+<div class="cat" onclick="selectCat(this,'دولة')">🌍 دولة</div>
+<div class="cat" onclick="selectCat(this,'مدينة')">🏙️ مدينة</div>
+</div>
+<div class="letters" id="lettersGrid"></div>
+<div class="result">
+<div id="resultWord"><span class="hint">اختر الفئة والحرف</span></div>
+<button id="sendBtn" onclick="sendResult()">إرسال للمحادثة ✉️</button>
+</div>
+<script>
+const tg=window.Telegram.WebApp;tg.expand();tg.ready();
+const NAMES={"ولد":{"ا":"أحمد","ب":"بلال","ت":"تيم","ث":"ثامر","ج":"جاسم","ح":"حسن","خ":"خالد","د":"داود","ذ":"ذياب","ر":"رامي","ز":"زياد","س":"سالم","ش":"شهاب","ص":"صالح","ض":"ضرار","ط":"طارق","ظ":"ظافر","ع":"عمر","غ":"غانم","ف":"فيصل","ق":"قاسم","ك":"كريم","ل":"لؤي","م":"محمد","ن":"ناصر","ه":"هاشم","و":"وليد","ي":"يوسف","أ":"أحمد"},"بنت":{"ا":"آية","ب":"بتول","ت":"تالا","ث":"ثريا","ج":"جنى","ح":"حلا","خ":"خلود","د":"دانا","ذ":"ذكرى","ر":"رنا","ز":"زينب","س":"سارة","ش":"شيماء","ص":"صفاء","ض":"ضحى","ط":"طيبة","ظ":"ظلال","ع":"علا","غ":"غادة","ف":"فاطمة","ق":"قمر","ك":"كوثر","ل":"لينا","م":"مريم","ن":"نور","ه":"هند","و":"وفاء","ي":"يسرا","أ":"أميرة"},"حيوان":{"ا":"أسد","ب":"ببر","ت":"تمساح","ث":"ثعلب","ج":"جمل","ح":"حصان","خ":"خروف","د":"دب","ذ":"ذئب","ر":"ربوع","ز":"زرافة","س":"سلحفاة","ش":"شيمبانزي","ص":"صقر","ض":"ضبع","ط":"طاووس","ظ":"ظبي","ع":"عقرب","غ":"غزال","ف":"فيل","ق":"قرد","ك":"كلب","ل":"لبؤة","م":"مها","ن":"نمر","ه":"هدهد","و":"وعل","ي":"يمامة","أ":"أرنب"},"جماد":{"ا":"إبرة","ب":"باب","ت":"تلفاز","ث":"ثلاجة","ج":"جدار","ح":"حجر","خ":"خزنة","د":"دلو","ذ":"ذهب","ر":"رمل","ز":"زجاج","س":"سيف","ش":"شمعة","ص":"صخرة","ض":"ضوء","ط":"طاولة","ظ":"ظرف","ع":"عمود","غ":"غطاء","ف":"فنجان","ق":"قلم","ك":"كرسي","ل":"لوح","م":"مرآة","ن":"نافذة","ه":"هاتف","و":"ورق","ي":"يد ساعة","أ":"أنبوب"},"دولة":{"ا":"الأردن","ب":"البرازيل","ت":"تركيا","ث":"تايلاند","ج":"الجزائر","ح":"الحبشة","خ":"كرواتيا","د":"الدنمارك","ذ":"جيبوتي","ر":"روسيا","ز":"زامبيا","س":"السعودية","ش":"شيلي","ص":"الصومال","ض":"ضائع","ط":"طاجيكستان","ظ":"ظُفار","ع":"عُمان","غ":"غانا","ف":"فرنسا","ق":"قطر","ك":"الكويت","ل":"لبنان","م":"مصر","ن":"نيجيريا","ه":"هولندا","و":"اليمن","ي":"اليابان","أ":"الأرجنتين"},"مدينة":{"ا":"أبوظبي","ب":"بغداد","ت":"طرابلس","ث":"تساليا","ج":"جدة","ح":"حلب","خ":"خانيونس","د":"دبي","ذ":"ذمار","ر":"الرياض","ز":"الزرقاء","س":"سيول","ش":"شيراز","ص":"صنعاء","ض":"الضفة","ط":"طهران","ظ":"الظهران","ع":"عمّان","غ":"غزة","ف":"فاس","ق":"القاهرة","ك":"كربلاء","ل":"لندن","م":"الموصل","ن":"النجف","ه":"هامبورغ","و":"وارسو","ي":"يافا","أ":"أنقرة"}};
+const LETTERS=["ا","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص","ض","ط","ظ","ع","غ","ف","ق","ك","ل","م","ن","ه","و","ي","أ"];
+let selectedCat='',selectedLetter='';
+const grid=document.getElementById('lettersGrid');
+LETTERS.forEach(l=>{const b=document.createElement('div');b.className='letter';b.textContent=l;b.onclick=()=>selectLetter(b,l);grid.appendChild(b);});
+function selectCat(el,cat){document.querySelectorAll('.cat').forEach(b=>b.classList.remove('active'));el.classList.add('active');selectedCat=cat;updateResult();}
+function selectLetter(el,letter){document.querySelectorAll('.letter').forEach(b=>b.classList.remove('active'));el.classList.add('active');selectedLetter=letter;updateResult();}
+function updateResult(){const word=document.getElementById('resultWord');const btn=document.getElementById('sendBtn');if(selectedCat&&selectedLetter){const name=NAMES[selectedCat]?.[selectedLetter];if(name){word.textContent=name;word.style.color='#4ade80';btn.style.display='block';}else{word.innerHTML='<span class="hint">ما في اسم لهذا الحرف</span>';btn.style.display='none';}}}
+function sendResult(){const name=NAMES[selectedCat]?.[selectedLetter];if(name)tg.sendData(name);}
+</script>
+</body>
+</html>
